@@ -1,10 +1,8 @@
 # USAGE
-# python detect_blinks.py --shape-predictor shape_predictor_68_face_landmarks.dat --video blink_detection_demo.mp4
 # python detect_blinks.py --shape-predictor shape_predictor_68_face_landmarks.dat
 
 # import the necessary packages
 from scipy.spatial import distance as dist
-from imutils.video import FileVideoStream
 from imutils.video import VideoStream
 from imutils import face_utils
 import numpy as np
@@ -13,14 +11,6 @@ import imutils
 import time
 import dlib
 import cv2
-import time
-
-
-start = time.time()
-print("hello")
-end = time.time()
-print(end - start)
-
 
 def eye_aspect_ratio(eye):
     # compute the euclidean distances between the two sets of
@@ -45,21 +35,19 @@ def eye_aspect_ratio(eye):
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--shape-predictor", required=True,
                 help="path to facial landmark predictor")
-# ap.add_argument("-v", "--video", type=str, default="",
-#                 help="path to input video file")
-# ap.add_argument("-r", "--picamera", type=int, default=-1,
-#   help="whether or not the Raspberry Pi camera should be used")
 args = vars(ap.parse_args())
 
-# define two constants, one for the eye aspect ratio to indicate
-# blink and then a second constant for the number of consecutive
-# frames the eye must be below the threshold
+# EAR threshold for the eye state to be considered as a blink
 EYE_AR_THRESH = 0.3
+
+# Num of consecutive frames for the blink to be considered
 EYE_AR_CONSEC_FRAMES = 3
+
 
 # initialize the frame counters and the total number of blinks
 COUNTER = 0
 TOTAL = 0
+
 
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor
@@ -74,10 +62,9 @@ predictor = dlib.shape_predictor(args["shape_predictor"])
 
 # start the video stream thread
 print("[INFO] starting video stream thread...")
-# vs = FileVideoStream(args["video"]).start()
-# fileStream = True
+
+# get the video stream from the webcam
 vs = VideoStream(src=0).start()
-# vs = VideoStream(usePiCamera=True).start()
 fileStream = False
 time.sleep(1.0)
 
@@ -127,9 +114,13 @@ while True:
         # threshold, and if so, increment the blink frame counter
         if ear < EYE_AR_THRESH:
             COUNTER += 1
+
+            # the time duration of the blink
             end = time.time()
-            if  end - start > 2:
-                cv2.putText(frame, "OPEN YOUR EYES PLEASE!", (50, 250),
+
+            # if the duration of the blink is greater than 2 seconds, then display the alert
+            if end - start > 2:
+                cv2.putText(frame, "Alert!", (225, 225),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         # otherwise, the eye aspect ratio is not below the blink
@@ -140,10 +131,10 @@ while True:
             if COUNTER >= EYE_AR_CONSEC_FRAMES:
                 TOTAL += 1
 
-
-
             # reset the eye frame counter
             COUNTER = 0
+
+            # reset the timer of the blink
             start = time.time()
 
         # draw the total number of blinks on the frame along with
